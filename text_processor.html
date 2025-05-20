@@ -26,6 +26,13 @@
         --output-editable-bg: #ffffff; /* 可编辑输出区域背景颜色 */
         --font-family: "Microsoft YaHei UI", -apple-system, BlinkMacSystemFont,
           "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* 全局字体 */
+
+        /* 滚动条样式变量 */
+        --scrollbar-width: 10px; /* 滚动条宽度 */
+        --scrollbar-border-radius: 5px; /* 滚动条圆角 */
+        --scrollbar-track-color: #e0e0e0; /* 滚动条轨道背景色 (浅色主题) */
+        --scrollbar-thumb-color: #a0a0a0; /* 滚动条滑块颜色 (浅色主题) */
+        --scrollbar-thumb-hover-color: #707070; /* 滚动条滑块悬停颜色 (浅色主题) */
       }
 
       /* 暗黑主题下的 CSS 变量覆盖 */
@@ -44,6 +51,10 @@
         --output-bg: #1e1e1e;
         --output-border: #4a4a4a;
         --output-editable-bg: #2d2d2d;
+
+        --scrollbar-track-color: #202020; /* 滚动条轨道背景色 (暗黑主题) */
+        --scrollbar-thumb-color: #555555; /* 滚动条滑块颜色 (暗黑主题) */
+        --scrollbar-thumb-hover-color: #777777; /* 滚动条滑块悬停颜色 (暗黑主题) */
       }
 
       /* body 基础样式 */
@@ -78,9 +89,13 @@
       /* 控制组样式，用于水平排列标签和输入控件 */
       .control-group {
         display: flex; /* flex 布局 */
-        align-items: center; /* 垂直居中对齐 */
+        align-items: flex-end; /* 使子项底部对齐，有助于按钮和输入框对齐 */
         gap: 10px; /* 子元素间隙 */
         flex-wrap: wrap; /* 允许子元素换行 */
+      }
+      /* 确保标签在垂直方向上与输入框的基线或中心对齐，如果输入框和按钮底部对齐了，标签可能需要调整 */
+      .control-group > .input-label-group > label {
+        margin-bottom: 4px; /* 微调标签位置 */
       }
 
       /* 控制组内标签和输入标签组内标签的样式 */
@@ -184,20 +199,28 @@
 
       /* 处理后文本显示区域样式 */
       #outputTextDisplay {
-        width: 100%; /* 宽度100% */
-        min-height: 250px; /* 最小高度 */
-        border: 1px solid var(--output-border); /* 边框 */
-        border-radius: 4px; /* 圆角 */
-        padding: 10px; /* 内边距 */
+        width: 100%;
+        /* min-height: 250px; 改为固定高度 */
+        height: 400px; /* 设置一个固定高度，例如 400px，您可以根据需要调整 */
+        border: 1px solid var(--output-border);
+        border-radius: 4px;
+        padding: 10px;
+        /* 为自定义滚动条留出空间，避免内容被最右侧的滚动条遮挡 */
+        /* 如果滚动条是浮动(overlay)类型，则此padding可能不需要或需要调整 */
+        padding-right: calc(var(--scrollbar-width) + 4px);
         overflow-y: auto; /* 内容超出时显示垂直滚动条 */
-        background-color: var(--output-editable-bg); /* 背景色 */
+        background-color: var(--output-editable-bg);
         white-space: pre-wrap; /* 保留空白符序列，但正常换行 */
         word-wrap: break-word; /* 允许在长单词或 URL 地址内部进行换行 */
-        box-sizing: border-box; /* padding 和 border 计算在宽度内 */
-        font-size: 16px; /* 字体大小 */
-        line-height: 1.7; /* 行高 */
-        color: var(--text-color); /* 文本颜色 */
-        font-family: var(--font-family); /* 字体 */
+        box-sizing: border-box;
+        font-size: 16px;
+        line-height: 1.7;
+        color: var(--text-color);
+        font-family: var(--font-family);
+        /* Firefox 滚动条样式 */
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb-color)
+          var(--scrollbar-track-color);
       }
 
       /* 处理后文本显示区域获取焦点时的样式 */
@@ -206,12 +229,39 @@
         border-color: var(--button-bg); /* 边框颜色与按钮一致 */
       }
 
+      /* Webkit (Chrome, Safari, Edge) 浏览器自定义滚动条样式 for #outputTextDisplay */
+      #outputTextDisplay::-webkit-scrollbar {
+        width: var(--scrollbar-width);
+      }
+
+      #outputTextDisplay::-webkit-scrollbar-track {
+        background: var(--scrollbar-track-color);
+        border-radius: var(--scrollbar-border-radius);
+        /* 可以给轨道添加一些边距，使其不紧贴边缘 */
+        margin: 2px 0;
+      }
+
+      #outputTextDisplay::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb-color);
+        border-radius: var(--scrollbar-border-radius);
+        /* 给滑块添加边框，使其看起来在轨道内部，增加层次感 */
+        border: 2px solid var(--scrollbar-track-color);
+      }
+
+      #outputTextDisplay::-webkit-scrollbar-thumb:hover {
+        background-color: var(--scrollbar-thumb-hover-color);
+      }
+
       /* 文本高亮样式 */
       .highlight {
         background-color: var(--highlight-bg); /* 高亮背景色 */
         color: var(--highlight-text); /* 高亮文本颜色 */
         font-weight: bold; /* 字体加粗 */
-        border-radius: 2px; /* 轻微圆角 */
+        border-radius: 3px; /* 稍微增加圆角 */
+        padding: 1px 3px; /* 增加微小的内边距使高亮更饱满 */
+        /* box-shadow: 0 0 5px var(--highlight-bg); /* 可选：添加轻微辉光效果 */
+        /* 为了模仿VSCode的风格，通常是高对比度的背景色，而不是过多的装饰 */
+        outline: 1px solid rgba(0, 0, 0, 0.1); /* 可选：给高亮区域一个非常细微的轮廓 */
       }
 
       /* 输入框和标签组合的样式（标签在输入框上方） */
@@ -239,9 +289,114 @@
       }
 
       .label-with-button button {
-        margin-left: 15px;
-        height: 28px;
-        padding: 4px 12px;
+        margin-left: 5px; /* 统一左边距，第一个按钮除外 */
+        height: 28px; /* 保持较小的高度 */
+        padding: 4px 10px; /* 调整内边距使箭头按钮更紧凑 */
+        font-size: 14px; /* 确保字体大小一致 */
+      }
+      .label-with-button button:first-child {
+        margin-left: 0; /* 移除第一个按钮的左边距 */
+      }
+
+      /* 为导航按钮特别设置 */
+      #prevMatchBtn,
+      #nextMatchBtn {
+        min-width: 30px; /* 给箭头按钮一个最小宽度 */
+      }
+
+      /* 新增：处理后文本区域与迷你地图的包裹容器 */
+      .output-and-minimap-container {
+        display: flex;
+        align-items: flex-start; /* 顶端对齐 */
+      }
+
+      /* 新增：outputTextDisplay 的直接包裹器，用于定位其内部的回到顶部按钮 */
+      #outputTextDisplayWrapper {
+        position: relative;
+        flex-grow: 1; /* 使 outputTextDisplay 占据主要空间 */
+      }
+
+      /* 确保 outputTextDisplay 有固定的高度，并且其内部滚动条正常工作 */
+      #outputTextDisplay {
+        /* width: 100%; */ /* 这由 flex-grow 控制 */
+        height: 400px; /* 保持之前设定的固定高度 */
+        /* 其他现有 #outputTextDisplay 样式保持不变 */
+      }
+
+      /* 新增：迷你地图容器样式 */
+      #minimapContainer {
+        width: 18px; /* 迷你地图的宽度 */ /* TODO */
+        height: 400px; /* 与 outputTextDisplay 高度一致 */
+        margin-left: 5px; /* 与文本区域的间距 */
+        background-color: var(--input-bg); /* 使用输入框背景色或稍暗的轨道色 */
+        border: 1px solid var(--input-border);
+        position: relative; /* 用于绝对定位内部的标记 */
+        border-radius: 3px;
+        overflow: hidden; /* 防止标记溢出 */
+        box-sizing: border-box;
+      }
+
+      /* 新增：迷你地图标记样式 */
+      .minimap-mark {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 3px; /* 标记的高度，确保可点击 */
+        background-color: var(--highlight-bg); /* 使用高亮背景色 */
+        opacity: 0.6;
+        cursor: pointer;
+        transition: opacity 0.2s, background-color 0.2s;
+        z-index: 1; /* 确保在容器背景之上 */
+      }
+
+      .minimap-mark:hover {
+        opacity: 0.9;
+        background-color: var(--button-hover-bg); /* 悬停时更明显 */
+      }
+      .minimap-mark.selected {
+        background-color: var(
+          --button-hover-bg
+        ); /* 使用更鲜明的颜色，例如按钮悬停色 */
+        opacity: 1;
+        /* 可以考虑添加一个细边框使其更突出 */
+        border: 1px solid var(--text-color);
+      }
+
+      /* 新增：专用于 outputTextDisplay 的回到顶部按钮 */
+      #outputScrollToTopBtn {
+        position: absolute;
+        bottom: 10px; /* 略微调整位置 */
+        right: calc(var(--scrollbar-width) + 10px); /* 略微调整位置 */
+        width: 28px; /* 缩小宽度 */
+        height: 28px; /* 缩小高度 */
+        border-radius: 50%;
+        background-color: var(--button-bg);
+        color: var(--button-text);
+        font-size: 14px; /* 调整箭头大小 */
+        border: none;
+        cursor: pointer;
+        display: none; /* 初始隐藏 */
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); /* 调整阴影 */
+        z-index: 1001;
+        opacity: 1; /* 改为完全不透明 */
+        transition: background-color 0.2s, bottom 0.3s; /* 移除 opacity 过渡 */
+        /* 使用 Flexbox 使箭头居中 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0; /* 移除可能的默认内边距 */
+      }
+
+      #outputScrollToTopBtn:hover {
+        background-color: var(--button-hover-bg);
+        /* opacity: 1; /* 不再需要，因为基础 opacity 就是 1 */
+      }
+
+      /* 新增：用于临时高亮跳转到的匹配项 */
+      .highlight.scrolled-to {
+        outline: 2px solid var(--button-hover-bg); /* 使用按钮悬停颜色作为轮廓 */
+        box-shadow: 0 0 8px var(--button-hover-bg); /* 添加辉光效果 */
+        transition: outline 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
       }
 
       /* 回到顶部按钮样式 */
@@ -357,20 +512,53 @@
     <div class="full-width-group">
       <div class="label-with-button">
         <label for="outputTextDisplay">处理后文本 (可编辑):</label>
-        <button id="copyOutputBtn" class="secondary" title="复制处理后文本">
-          复制
-        </button>
+        <div>
+          <!-- 新增一个 div 包裹按钮，方便对齐 -->
+          <button
+            id="prevMatchBtn"
+            class="secondary"
+            title="上一个匹配"
+            disabled
+          >
+            ↑
+          </button>
+          <button
+            id="nextMatchBtn"
+            class="secondary"
+            title="下一个匹配"
+            disabled
+          >
+            ↓
+          </button>
+          <button id="copyOutputBtn" class="secondary" title="复制处理后文本">
+            复制
+          </button>
+        </div>
       </div>
-      <div
-        id="outputTextDisplay"
-        contenteditable="true"
-        spellcheck="false"
-        aria-live="polite"
-      >
-        处理后的文本将显示在这里...
+      <div class="output-and-minimap-container">
+        <div id="outputTextDisplayWrapper">
+          <div
+            id="outputTextDisplay"
+            contenteditable="true"
+            spellcheck="false"
+            aria-live="polite"
+          >
+            处理后的文本将显示在这里...
+          </div>
+          <button
+            id="outputScrollToTopBtn"
+            aria-label="滚动到输出区顶部"
+            title="滚动到输出区顶部"
+          >
+            ↑
+          </button>
+        </div>
+        <div id="minimapContainer">
+          <!-- 迷你地图标记将由 JavaScript 动态添加 -->
+        </div>
       </div>
-      <!-- 处理后文本显示区域，可编辑 -->
     </div>
+
     <!-- 复制处理后文本按钮 -->
     <div class="control-group">
       <button id="copyModifiedBtn" disabled>复制处理后文本</button>
@@ -399,13 +587,19 @@
       const copyModifiedBtn = document.getElementById("copyModifiedBtn"); // 复制处理后文本按钮
       const themeToggleBtn = document.getElementById("themeToggleBtn"); // 主题切换按钮
       const copyOutputBtn = document.getElementById("copyOutputBtn"); // 标签旁的复制按钮
+      const minimapContainer = document.getElementById("minimapContainer");
+      const outputScrollToTopBtn = document.getElementById(
+        "outputScrollToTopBtn"
+      );
+      const prevMatchBtn = document.getElementById("prevMatchBtn");
+      const nextMatchBtn = document.getElementById("nextMatchBtn");
 
       // --- 全局变量 ---
       let currentMatches = []; // 存储当前查找到的匹配项数组，每个元素包含 {index, text, length}
       let textForOutputProcessing = ""; // 存储当前用于查找和替换操作的文本基础，通常与 outputTextDisplay 的 innerText 同步或来自 inputText
       const SAVED_REGEX_LOCALSTORAGE_KEY =
         "textProcessorSavedRegexesAndReplacements"; // 用于 localStorage 存储存档正则表达式和替换内容的键名
-
+      let currentMatchIndex = -1; // 当前通过导航选中的匹配项索引
       // --- 正则表达式及替换式存档逻辑 ---
 
       /**
@@ -678,6 +872,8 @@
         currentMatches = []; // 原文改变，之前的匹配结果失效，清空
         updateButtonStates(); // 更新相关按钮（如替换按钮）的可用状态
         saveState(); // 保存当前页面状态
+        currentMatchIndex = -1;
+        updateMinimap([], textForOutputProcessing); // 原文改变，清空迷你地图标记
       });
 
       // 当替换内容输入框内容改变时，保存页面状态
@@ -694,6 +890,8 @@
         currentMatches = []; // 直接编辑会使之前基于正则的匹配失效，清空
         updateButtonStates(); // 更新按钮状态
         copyModifiedBtn.disabled = outputTextDisplay.innerText.trim() === ""; // 如果编辑后为空，禁用复制按钮
+        currentMatchIndex = -1;
+        updateMinimap([], textForOutputProcessing); // 输出区直接编辑，清空迷你地图标记
       });
 
       /**
@@ -723,6 +921,49 @@
       });
 
       /**
+       * @function navigateMatches
+       * @description 处理上一个/下一个匹配项的导航。
+       * @param {number} direction - 1 表示下一个，-1 表示上一个。
+       */
+      function navigateMatches(direction) {
+        if (currentMatches.length === 0) return;
+
+        const oldMatchIndex = currentMatchIndex;
+
+        if (direction === 1) {
+          // Next
+          currentMatchIndex++;
+          if (currentMatchIndex >= currentMatches.length) {
+            currentMatchIndex = 0; // 循环到第一个
+          }
+        } else if (direction === -1) {
+          // Previous
+          currentMatchIndex--;
+          if (currentMatchIndex < 0) {
+            currentMatchIndex = currentMatches.length - 1; // 循环到最后一个
+          }
+        }
+
+        const matchToScroll = currentMatches[currentMatchIndex];
+        if (matchToScroll && matchToScroll.spanId) {
+          const targetSpan = document.getElementById(matchToScroll.spanId);
+          if (targetSpan) {
+            targetSpan.scrollIntoView({ behavior: "smooth", block: "center" });
+            // 临时高亮跳转到的匹配项
+            targetSpan.classList.add("scrolled-to");
+            setTimeout(() => {
+              targetSpan.classList.remove("scrolled-to");
+            }, 1500);
+          }
+        }
+        updateMinimap(currentMatches, textForOutputProcessing); // 更新迷你地图以高亮新选中的标记
+        updateButtonStates(); // 更新导航按钮的禁用状态
+      }
+
+      prevMatchBtn.addEventListener("click", () => navigateMatches(-1));
+      nextMatchBtn.addEventListener("click", () => navigateMatches(1));
+
+      /**
        * @event findBtn 'click'
        * @description 处理“查找”按钮的点击事件。
        *              根据正则表达式输入框中的模式，在 `textForOutputProcessing` (当前工作文本) 中查找所有匹配项。
@@ -737,6 +978,8 @@
         if (!pattern.trim()) {
           updateOutputDisplay(textForOutputProcessing, false); // 显示当前文本，无高亮
           currentMatches = []; // 清空匹配项
+          updateMinimap([], textForOutputProcessing); // 清空迷你地图
+          currentMatchIndex = -1;
           updateButtonStates(); // 更新按钮状态
           return;
         }
@@ -752,15 +995,26 @@
               index: match.index, // 匹配项的起始索引
               text: match[0], // 匹配到的文本
               length: match[0].length, // 匹配文本的长度
+              // spanId 将在下面添加
             });
           }
+
+          // 为每个匹配项分配一个唯一的 spanId，用于后续定位
+          currentMatches.forEach((match, index) => {
+            match.spanId = `highlight-match-${index}`;
+          });
+
           highlightMatchesInOutput(textForOutputProcessing, currentMatches); // 高亮显示所有找到的匹配项
-          updateButtonStates(); // 更新按钮状态（如启用替换按钮）
+          updateMinimap(currentMatches, textForOutputProcessing); // 更新迷你地图
+          currentMatchIndex = -1; // 重置选中索引
+          updateButtonStates(); // 更新按钮状态,包括导航按钮
         } catch (e) {
           // 捕获无效的正则表达式错误
           alert("无效的正则表达式: " + e.message);
           updateOutputDisplay(textForOutputProcessing, false); // 出错时显示当前文本，无高亮
           currentMatches = []; // 清空匹配项
+          updateMinimap([], textForOutputProcessing); // 清空迷你地图
+          currentMatchIndex = -1;
           updateButtonStates(); // 更新按钮状态
         }
       });
@@ -779,25 +1033,82 @@
         }
         let highlightedHtml = ""; // 用于构建包含高亮标签的 HTML 字符串
         let lastIndex = 0; // 记录上一个匹配项结束后的索引位置
-        // 确保匹配项按索引排序，以便正确构建高亮文本
-        const sortedMatches = [...matches].sort((a, b) => a.index - b.index); // 对匹配项按起始位置排序
+        // 假设 'matches' 数组中的对象已经有了 'spanId' 属性
+        // 并且它们是按 match.index 排序的（findBtn 中的 regex.exec 自然保证了这一点）
 
-        sortedMatches.forEach((match) => {
-          // 遍历排序后的每个匹配项
-          // 添加从上一个匹配结束到当前匹配开始之间的普通文本（需要HTML转义）
+        matches.forEach((match) => {
           highlightedHtml += escapeHtml(
             textToHighlight.substring(lastIndex, match.index)
           );
-          // 添加当前匹配项，并用 <span class="highlight"> 包裹（匹配文本也需HTML转义）
-          highlightedHtml += `<span class="highlight">${escapeHtml(
-            match.text
-          )}</span>`;
-          lastIndex = match.index + match.length; // 更新 lastIndex 为当前匹配项的结束位置
+          // 使用 match.spanId 为 span 设置 ID
+          highlightedHtml += `<span class="highlight" id="${
+            match.spanId
+          }">${escapeHtml(match.text)}</span>`;
+          lastIndex = match.index + match.length;
         });
-        // 添加最后一个匹配项之后剩余的普通文本（需要HTML转义）
         highlightedHtml += escapeHtml(textToHighlight.substring(lastIndex));
-        outputTextDisplay.innerHTML = highlightedHtml; // 将构建好的 HTML 设置到输出区域
-        copyModifiedBtn.disabled = outputTextDisplay.innerText.trim() === ""; // 更新复制按钮状态
+        outputTextDisplay.innerHTML = highlightedHtml;
+        copyModifiedBtn.disabled = outputTextDisplay.innerText.trim() === "";
+      }
+
+      /**
+       * @function updateMinimap
+       * @description 更新迷你地图上的标记以反映当前文本中的匹配项。
+       * @param {Array<Object>} matches - 当前的匹配项数组，每个对象应包含 { index, spanId }。
+       * @param {string} fullText - 完整的工作文本 (textForOutputProcessing)。
+       */
+      function updateMinimap(matches, fullText) {
+        minimapContainer.innerHTML = "";
+        const minimapHeight = minimapContainer.clientHeight;
+        const markHeight = 3;
+
+        if (
+          !matches ||
+          matches.length === 0 ||
+          !fullText ||
+          fullText.length === 0 ||
+          minimapHeight <= 0
+        ) {
+          return;
+        }
+        const totalTextLength = fullText.length;
+        if (totalTextLength === 0) return;
+
+        matches.forEach((match, index) => {
+          if (match.index === undefined || !match.spanId) return;
+
+          const mark = document.createElement("div");
+          mark.className = "minimap-mark";
+          if (index === currentMatchIndex) {
+            // 如果是当前选中的匹配项
+            mark.classList.add("selected");
+          }
+
+          let topPosition = (match.index / totalTextLength) * minimapHeight;
+          topPosition = Math.max(
+            0,
+            Math.min(topPosition, minimapHeight - markHeight)
+          );
+          mark.style.top = `${topPosition}px`;
+
+          mark.addEventListener("click", () => {
+            currentMatchIndex = index; // 点击迷你地图标记也更新当前选中索引
+            const targetSpan = document.getElementById(match.spanId);
+            if (targetSpan) {
+              targetSpan.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+              targetSpan.classList.add("scrolled-to");
+              setTimeout(() => {
+                targetSpan.classList.remove("scrolled-to");
+              }, 1500);
+            }
+            updateMinimap(currentMatches, textForOutputProcessing); // 重新渲染迷你地图以更新选中状态
+            updateButtonStates(); // 更新按钮状态
+          });
+          minimapContainer.appendChild(mark);
+        });
       }
 
       /**
@@ -882,14 +1193,21 @@
               });
             }
             // 高亮显示更新后的工作文本及其新的匹配项
+            currentMatches.forEach(
+              (m, idx) => (m.spanId = `highlight-match-${idx}`)
+            ); // 重新分配 spanId
             highlightMatchesInOutput(textForOutputProcessing, currentMatches);
-            updateButtonStates(); // 更新按钮状态
+            currentMatchIndex = -1;
+            updateMinimap(currentMatches, textForOutputProcessing); // 更新迷你地图
+            updateButtonStates();
           } else {
             // 此情况理论上不应发生，因为按钮启用条件是 currentMatches.length > 0
             // 但作为防御性编程，如果 textForOutputProcessing 被意外修改导致无匹配，则提示
             alert("在当前处理文本中没有更多可替换的匹配项。");
             currentMatches = []; // 清理匹配项
+            currentMatchIndex = -1;
             highlightMatchesInOutput(textForOutputProcessing, currentMatches); // 移除高亮
+            updateMinimap(currentMatches, textForOutputProcessing); // 清空迷你地图
             updateButtonStates(); // 更新按钮状态
           }
         } catch (e) {
@@ -925,12 +1243,16 @@
             textForOutputProcessing = newText; // 关键：更新工作文本为全部替换后的文本
             updateOutputDisplay(textForOutputProcessing, false); // 显示替换后的新文本，不进行高亮
             currentMatches = []; // 全部替换后，之前的匹配项列表清空，因为文本结构已大规模改变
+            currentMatchIndex = -1;
+            updateMinimap([], textForOutputProcessing); // 清空迷你地图，因为高亮已移除
             updateButtonStates(); // 更新按钮状态（通常会禁用替换按钮，因为匹配项已清空）
           } else {
             // 此情况理论上不应发生，因为按钮启用条件是 currentMatches.length > 0
             alert("在当前处理文本中没有匹配项可替换。");
             currentMatches = []; // 确保匹配项清空
+            currentMatchIndex = -1;
             updateOutputDisplay(textForOutputProcessing, false); // 确保显示当前文本无高亮
+            updateMinimap([], textForOutputProcessing); // 清空迷你地图
             updateButtonStates(); // 更新按钮状态
           }
         } catch (e) {
@@ -960,60 +1282,76 @@
        *              更新各个按钮（替换、全部替换、复制、删除存档）的禁用 (disabled) 状态。
        */
       function updateButtonStates() {
-        const hasPattern = regexInput.value.trim() !== ""; // 检查正则表达式输入框是否为空
-        const hasMatches = currentMatches.length > 0; // 检查当前是否有查找到的匹配项
+        const hasPattern = regexInput.value.trim() !== "";
+        const hasMatches = currentMatches.length > 0;
 
-        // 替换下一个和全部替换按钮：需要有正则表达式且有匹配项时才启用
         replaceNextBtn.disabled = !hasMatches || !hasPattern;
         replaceAllBtn.disabled = !hasMatches || !hasPattern;
 
-        // 复制处理后文本按钮：当输出区内容不为空且不是初始占位符时启用
         copyModifiedBtn.disabled =
           outputTextDisplay.innerText.trim() === "" ||
           outputTextDisplay.innerHTML === "处理后的文本将显示在这里...";
-
-        // 标签旁的复制按钮状态与底部复制按钮保持一致
         copyOutputBtn.disabled = copyModifiedBtn.disabled;
 
         const selectedSavedOption =
-          savedRegexSelect.options[savedRegexSelect.selectedIndex]; // 获取当前选中的存档项
-        // 删除存档按钮：仅当选中了有效的存档项（通过 data-name 判断，排除默认提示选项）时才启用
+          savedRegexSelect.options[savedRegexSelect.selectedIndex];
         deleteRegexBtn.disabled =
           !selectedSavedOption || !selectedSavedOption.dataset.name;
+
+        // 新增：导航按钮状态
+        prevMatchBtn.disabled = !hasMatches; // 如果没有匹配项，则禁用
+        nextMatchBtn.disabled = !hasMatches; // 如果没有匹配项，则禁用
+        // 可选：如果只有一个匹配项，也可以考虑禁用，或者让它们循环
+        // 当前的 navigateMatches 实现是循环的，所以只有在 no matches 时才禁用
       }
 
-      // --- 回到顶部按钮功能 ---
-      const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+      // // --- 回到顶部按钮功能 ---
+      // const scrollToTopBtn = document.getElementById("scrollToTopBtn");
 
-      // 监听滚动事件，控制按钮显示隐藏
-      window.addEventListener("scroll", () => {
-        // 当页面滚动超过300px时显示按钮
-        if (window.scrollY > 300) {
-          scrollToTopBtn.style.display = "block";
+      // // 监听滚动事件，控制按钮显示隐藏
+      // window.addEventListener("scroll", () => {
+      //   // 当页面滚动超过300px时显示按钮
+      //   if (window.scrollY > 300) {
+      //     scrollToTopBtn.style.display = "block";
+      //   } else {
+      //     scrollToTopBtn.style.display = "none";
+      //   }
+      // });
+
+      // // 为标签旁的复制按钮添加事件监听器
+      // copyOutputBtn.addEventListener("click", async () => {
+      //   try {
+      //     await navigator.clipboard.writeText(outputTextDisplay.innerText);
+      //     alert("处理后的文本已复制到剪贴板!");
+      //   } catch (err) {
+      //     console.error("无法复制文本: ", err);
+      //     alert("无法复制文本。");
+      //   }
+      // });
+
+      // // 点击按钮滚动到处理后文本框顶部
+      // scrollToTopBtn.addEventListener("click", () => {
+      //   outputTextDisplay.scrollIntoView({ behavior: "smooth" });
+      // });
+
+      // --- outputTextDisplay 回到顶部按钮功能 ---
+      outputTextDisplay.addEventListener("scroll", () => {
+        if (outputTextDisplay.scrollTop > 150) {
+          // 滚动超过150px时显示
+          outputScrollToTopBtn.style.display = "block";
         } else {
-          scrollToTopBtn.style.display = "none";
+          outputScrollToTopBtn.style.display = "none";
         }
       });
 
-      // 为标签旁的复制按钮添加事件监听器
-      copyOutputBtn.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(outputTextDisplay.innerText);
-          alert("处理后的文本已复制到剪贴板!");
-        } catch (err) {
-          console.error("无法复制文本: ", err);
-          alert("无法复制文本。");
-        }
-      });
-
-      // 点击按钮滚动到处理后文本框顶部
-      scrollToTopBtn.addEventListener("click", () => {
-        outputTextDisplay.scrollIntoView({ behavior: "smooth" });
+      outputScrollToTopBtn.addEventListener("click", () => {
+        outputTextDisplay.scrollTo({ top: 0, behavior: "smooth" });
       });
 
       // --- 初始化 ---
       // 页面加载时执行的初始化操作。
       loadState(); // 加载之前保存的页面状态（输入框内容），会初始化 textForOutputProcessing。
+      updateMinimap([], textForOutputProcessing); // 初始加载时，如果无匹配则清空
       loadSavedRegexes(); // 加载并显示已存档的正则表达式和替换内容列表。
       updateButtonStates(); // 根据加载后的状态，初始化所有按钮的可用性。
 
