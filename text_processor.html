@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>文本查找替换工具</title>
+    <style>
+      /* :root 定义 CSS 变量，用于主题化和统一样式 */
+      :root {
+        --bg-color: #f0f0f0; /* 背景颜色 */
+        --text-color: #333; /* 文本颜色 */
+        --input-bg: #fff; /* 输入框背景颜色 */
+        --input-border: #ccc; /* 输入框边框颜色 */
+        --button-bg: #007bff; /* 按钮背景颜色 */
+        --button-text: #fff; /* 按钮文本颜色 */
+        --button-hover-bg: #0056b3; /* 按钮悬停背景颜色 */
+        --highlight-bg: rgba(86, 130, 3, 0.4); /* 查找高亮背景颜色 */
+        --highlight-text: black; /* 查找高亮文本颜色 */
+        --secondary-button-bg: #6c757d; /* 次要按钮背景颜色 */
+        --secondary-button-hover-bg: #545b62; /* 次要按钮悬停背景颜色 */
+        --disabled-button-bg: #cccccc; /* 禁用按钮背景颜色 */
+        --disabled-button-text: #666666; /* 禁用按钮文本颜色 */
+        --textarea-bg: #fff; /* 文本域背景颜色 */
+        --output-bg: #f9f9f9; /* 输出区域背景颜色 (未使用，outputTextDisplay 使用 --output-editable-bg) */
+        --output-border: #ddd; /* 输出区域边框颜色 */
+        --output-editable-bg: #ffffff; /* 可编辑输出区域背景颜色 */
+        --font-family: "Microsoft YaHei UI", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* 全局字体 */
+      }
+
+      /* 暗黑主题下的 CSS 变量覆盖 */
+      body.dark-theme {
+        --bg-color: #252526;
+        --text-color: #cccccc;
+        --input-bg: #3c3c3c;
+        --input-border: #555555;
+        --button-bg: #007acc;
+        --button-hover-bg: #005b99;
+        --highlight-bg: #ffe700; /* 暗黑模式下的高亮背景 */
+        --highlight-text: #1e1e1e; /* 暗黑模式下的高亮文本 */
+        --secondary-button-bg: #5a6268;
+        --secondary-button-hover-bg: #474c51;
+        --textarea-bg: #2d2d2d;
+        --output-bg: #1e1e1e;
+        --output-border: #4a4a4a;
+        --output-editable-bg: #2d2d2d;
+      }
+
+      /* body 基础样式 */
+      body {
+        font-family: var(--font-family); /* 使用定义的字体 */
+        margin: 0; /* 移除默认外边距 */
+        padding: 20px; /* 内边距 */
+        padding-top: 60px; /* 为固定顶栏留出空间 */
+        background-color: var(--bg-color); /* 使用变量定义背景色 */
+        color: var(--text-color); /* 使用变量定义文本颜色 */
+        display: flex; /* 使用 flex 布局 */
+        flex-direction: column; /* 子元素垂直排列 */
+        gap: 15px; /* 子元素之间的间隙 */
+        transition: background-color 0.3s, color 0.3s; /* 背景和颜色变化的过渡效果 */
+      }
+
+      /* 顶部固定栏容器样式 */
+      .top-bar-container {
+        position: fixed; /* 固定定位 */
+        top: 0; /* 距离顶部0 */
+        left: 0; /* 距离左侧0 */
+        width: 100%; /* 宽度100% */
+        padding: 10px 20px; /* 内边距 */
+        box-sizing: border-box; /* border 和 padding 计算在宽度内 */
+        display: flex; /* flex 布局 */
+        justify-content: flex-end; /* 内容右对齐 */
+        background-color: var(--bg-color); /* 背景色 */
+        z-index: 1000; /* 堆叠顺序，确保在最上层 */
+        border-bottom: 1px solid var(--input-border); /* 底部边框 */
+      }
+
+      /* 控制组样式，用于水平排列标签和输入控件 */
+      .control-group {
+        display: flex; /* flex 布局 */
+        align-items: center; /* 垂直居中对齐 */
+        gap: 10px; /* 子元素间隙 */
+        flex-wrap: wrap; /* 允许子元素换行 */
+      }
+
+      /* 控制组内标签和输入标签组内标签的样式 */
+      .control-group label,
+      .input-label-group > label {
+        white-space: nowrap; /* 防止标签内文字换行 */
+        font-size: 0.9em; /* 字体大小 */
+        color: var(--text-color); /* 文本颜色 */
+        opacity: 0.9; /* 透明度 */
+        margin-bottom: 2px; /* 底部外边距 */
+      }
+
+      /* 文本输入框、文本域和下拉选择框的通用样式 */
+      input[type="text"],
+      textarea,
+      select {
+        padding: 8px 10px; /* 内边距 */
+        border: 1px solid var(--input-border); /* 边框 */
+        border-radius: 4px; /* 圆角 */
+        background-color: var(--input-bg); /* 背景色 */
+        color: var(--text-color); /* 文本颜色 */
+        font-size: 14px; /* 字体大小 */
+        font-family: var(--font-family); /* 字体 */
+      }
+
+      /* 文本输入框和下拉选择框的特定样式，使其可伸缩 */
+      input[type="text"],
+      select {
+        flex-grow: 1; /* 占据剩余空间 */
+        min-width: 150px; /* 最小宽度 */
+      }
+
+      /* 输入框与按钮组合的包裹容器样式 */
+      .input-with-button-wrapper {
+        display: flex; /* flex 布局 */
+        flex-grow: 1; /* 占据父容器的剩余空间 */
+      }
+
+      /* 输入框与按钮组合中输入框/选择框的样式 */
+      .input-with-button-wrapper input[type="text"],
+      .input-with-button-wrapper select {
+        border-top-right-radius: 0; /* 移除右上圆角 */
+        border-bottom-right-radius: 0; /* 移除右下圆角 */
+        flex-grow: 1; /* 占据包裹容器的剩余空间 */
+      }
+
+      /* 输入框与按钮组合中按钮的样式 */
+      .input-with-button-wrapper button {
+        border-top-left-radius: 0; /* 移除左上圆角 */
+        border-bottom-left-radius: 0; /* 移除左下圆角 */
+      }
+
+      /* 按钮通用样式 */
+      button {
+        padding: 8px 15px; /* 内边距 */
+        border: none; /* 无边框 */
+        border-radius: 4px; /* 圆角 */
+        background-color: var(--button-bg); /* 背景色 */
+        color: var(--button-text); /* 文本颜色 */
+        cursor: pointer; /* 鼠标指针样式 */
+        font-size: 14px; /* 字体大小 */
+        font-family: var(--font-family); /* 字体 */
+        transition: background-color 0.2s; /* 背景色过渡效果 */
+        white-space: nowrap; /* 防止按钮内文字换行 */
+        height: 36px; /* 固定高度，与输入框对齐 */
+        box-sizing: border-box; /* padding 和 border 计算在高度内 */
+      }
+
+      /* 按钮悬停样式 */
+      button:hover {
+        background-color: var(--button-hover-bg); /* 悬停背景色 */
+      }
+
+      /* 次要按钮样式 */
+      button.secondary {
+        background-color: var(--secondary-button-bg); /* 次要按钮背景色 */
+      }
+
+      /* 次要按钮悬停样式 */
+      button.secondary:hover {
+        background-color: var(
+          --secondary-button-hover-bg
+        ); /* 次要按钮悬停背景色 */
+      }
+
+      /* 禁用按钮样式 */
+      button:disabled {
+        background-color: var(--disabled-button-bg); /* 禁用背景色 */
+        color: var(--disabled-button-text); /* 禁用文本颜色 */
+        cursor: not-allowed; /* 禁用鼠标指针 */
+      }
+
+      /* 原文输入文本域样式 */
+      #inputText {
+        width: 100%; /* 宽度100% */
+        min-height: 150px; /* 最小高度 */
+        resize: vertical; /* 允许垂直方向调整大小 */
+        box-sizing: border-box; /* padding 和 border 计算在宽度内 */
+        background-color: var(--textarea-bg); /* 背景色 */
+      }
+
+      /* 处理后文本显示区域样式 */
+      #outputTextDisplay {
+        width: 100%; /* 宽度100% */
+        min-height: 250px; /* 最小高度 */
+        border: 1px solid var(--output-border); /* 边框 */
+        border-radius: 4px; /* 圆角 */
+        padding: 10px; /* 内边距 */
+        overflow-y: auto; /* 内容超出时显示垂直滚动条 */
+        background-color: var(--output-editable-bg); /* 背景色 */
+        white-space: pre-wrap; /* 保留空白符序列，但正常换行 */
+        word-wrap: break-word; /* 允许在长单词或 URL 地址内部进行换行 */
+        box-sizing: border-box; /* padding 和 border 计算在宽度内 */
+        font-size: 16px; /* 字体大小 */
+        line-height: 1.7; /* 行高 */
+        color: var(--text-color); /* 文本颜色 */
+        font-family: var(--font-family); /* 字体 */
+      }
+
+      /* 处理后文本显示区域获取焦点时的样式 */
+      #outputTextDisplay:focus {
+        outline: 2px solid var(--button-bg); /* 焦点轮廓 */
+        border-color: var(--button-bg); /* 边框颜色与按钮一致 */
+      }
+
+      /* 文本高亮样式 */
+      .highlight {
+        background-color: var(--highlight-bg); /* 高亮背景色 */
+        color: var(--highlight-text); /* 高亮文本颜色 */
+        font-weight: bold; /* 字体加粗 */
+        border-radius: 2px; /* 轻微圆角 */
+      }
+
+      /* 输入框和标签组合的样式（标签在输入框上方） */
+      .input-label-group {
+        display: flex; /* flex 布局 */
+        flex-direction: column; /* 子元素垂直排列 */
+        gap: 5px; /* 子元素间隙 */
+        flex-grow: 1; /* 占据父容器的剩余空间 */
+      }
+
+      /* 占满全宽的组，用于文本域等 */
+      .full-width-group {
+        display: flex; /* flex 布局 */
+        flex-direction: column; /* 子元素垂直排列 */
+        width: 100%; /* 宽度100% */
+        gap: 5px; /* 子元素间隙 */
+      }
+
+      /* 标签与按钮水平排列的容器 */
+      .label-with-button {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+
+      .label-with-button button {
+        margin-left: 15px;
+        height: 28px;
+        padding: 4px 12px;
+      }
+
+      /* 回到顶部按钮样式 */
+      #scrollToTopBtn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: var(--button-bg);
+        color: var(--button-text);
+        font-size: 20px;
+        border: none;
+        cursor: pointer;
+        display: none; /* 初始状态不显示 */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        opacity: 0.8;
+        transition: opacity 0.3s, background-color 0.2s;
+      }
+
+      #scrollToTopBtn:hover {
+        background-color: var(--button-hover-bg);
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- 顶部栏，包含主题切换按钮 -->
+    <div class="top-bar-container">
+      <button id="themeToggleBtn" aria-label="切换明暗主题">🌙/☀️</button>
+      <!-- 主题切换按钮 -->
+    </div>
+
+    <!-- 存档名称输入和保存按钮 -->
+    <div class="control-group">
+      <div class="input-label-group">
+        <label for="regexNameInput">存档名称 (可选):</label>
+        <input
+          type="text"
+          id="regexNameInput"
+          placeholder="为此正则表达式命名"
+        />
+        <!-- 存档名称输入框 -->
+      </div>
+      <button id="saveRegexBtn">存档此表达式</button>
+      <!-- 保存表达式按钮 -->
+    </div>
+    <!-- 选择已存档的正则表达式和替换内容，以及删除按钮 -->
+    <div class="control-group">
+      <div class="input-label-group">
+        <label for="savedRegexSelect">选择已存档 正则/替换:</label>
+        <div class="input-with-button-wrapper">
+          <select id="savedRegexSelect"></select>
+          <!-- 已存档内容下拉选择框 -->
+          <button id="deleteRegexBtn" class="secondary" title="删除选中的存档">
+            删除选中
+          </button>
+          <!-- 删除选中存档按钮 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 正则表达式输入和查找按钮 -->
+    <div class="control-group">
+      <div class="input-label-group">
+        <label for="regexInput">正则表达式:</label>
+        <div class="input-with-button-wrapper">
+          <input
+            type="text"
+            id="regexInput"
+            placeholder="输入正则表达式或从上方选择"
+          />
+          <!-- 正则表达式输入框 -->
+          <button id="findBtn">查找</button>
+          <!-- 查找按钮 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 替换文本输入和替换按钮 -->
+    <div class="control-group">
+      <div class="input-label-group">
+        <label for="replaceInput">替换为:</label>
+        <input
+          type="text"
+          id="replaceInput"
+          placeholder="输入替换文本或从上方选择"
+        />
+        <!-- 替换文本输入框 -->
+      </div>
+      <button id="replaceNextBtn" disabled>替换下一个</button>
+      <!-- 替换下一个匹配项按钮，默认禁用 -->
+      <button id="replaceAllBtn" disabled>全部替换</button>
+      <!-- 全部替换按钮，默认禁用 -->
+    </div>
+
+    <!-- 原文输入区域 -->
+    <div class="full-width-group">
+      <label for="inputText">粘贴原文 (源文本):</label>
+      <textarea id="inputText" placeholder="在此粘贴大篇幅文章"></textarea>
+      <!-- 原文输入文本域 -->
+    </div>
+    <!-- 粘贴按钮 -->
+    <div class="control-group">
+      <button id="pasteBtn">粘贴剪贴板内容到原文</button>
+      <!-- 粘贴按钮 -->
+    </div>
+
+    <!-- 处理后文本显示区域 -->
+    <div class="full-width-group">
+      <div class="label-with-button">
+        <label for="outputTextDisplay">处理后文本 (可编辑):</label>
+        <button id="copyOutputBtn" class="secondary" title="复制处理后文本">
+          复制
+        </button>
+      </div>
+      <div
+        id="outputTextDisplay"
+        contenteditable="true"
+        spellcheck="false"
+        aria-live="polite"
+      >
+        处理后的文本将显示在这里...
+      </div>
+      <!-- 处理后文本显示区域，可编辑 -->
+    </div>
+    <!-- 复制处理后文本按钮 -->
+    <div class="control-group">
+      <button id="copyModifiedBtn" disabled>复制处理后文本</button>
+      <!-- 复制按钮，默认禁用 -->
+    </div>
+
+    <button id="scrollToTopBtn" aria-label="回到顶部" title="回到顶部">
+      ↑
+    </button>
+
+    <script>
+      // --- DOM 元素获取 ---
+      // 此部分代码获取 HTML 页面中各个元素的引用，以便后续通过 JavaScript 操作它们。
+      const regexNameInput = document.getElementById("regexNameInput"); // 存档名称输入框
+      const saveRegexBtn = document.getElementById("saveRegexBtn"); // 保存存档按钮
+      const savedRegexSelect = document.getElementById("savedRegexSelect"); // 已存档正则表达式下拉列表
+      const deleteRegexBtn = document.getElementById("deleteRegexBtn"); // 删除存档按钮
+      const regexInput = document.getElementById("regexInput"); // 正则表达式输入框
+      const findBtn = document.getElementById("findBtn"); // 查找按钮
+      const replaceInput = document.getElementById("replaceInput"); // 替换文本输入框
+      const replaceNextBtn = document.getElementById("replaceNextBtn"); // 替换下一个按钮
+      const replaceAllBtn = document.getElementById("replaceAllBtn"); // 全部替换按钮
+      const inputText = document.getElementById("inputText"); // 原文输入文本域
+      const pasteBtn = document.getElementById("pasteBtn"); // 粘贴按钮
+      const outputTextDisplay = document.getElementById("outputTextDisplay"); // 处理后文本显示区域
+      const copyModifiedBtn = document.getElementById("copyModifiedBtn"); // 复制处理后文本按钮
+      const themeToggleBtn = document.getElementById("themeToggleBtn"); // 主题切换按钮
+      const copyOutputBtn = document.getElementById("copyOutputBtn"); // 标签旁的复制按钮
+
+      // --- 全局变量 ---
+      let currentMatches = []; // 存储当前查找到的匹配项数组，每个元素包含 {index, text, length}
+      let textForOutputProcessing = ""; // 存储当前用于查找和替换操作的文本基础，通常与 outputTextDisplay 的 innerText 同步或来自 inputText
+      const SAVED_REGEX_LOCALSTORAGE_KEY =
+        "textProcessorSavedRegexesAndReplacements"; // 用于 localStorage 存储存档正则表达式和替换内容的键名
+
+      // --- 正则表达式及替换式存档逻辑 ---
+
+      /**
+       * @function loadSavedRegexes
+       * @description 从 localStorage 加载已存档的正则表达式和替换内容，并填充到下拉选择框中。
+       */
+      function loadSavedRegexes() {
+        const savedItems = JSON.parse(
+          localStorage.getItem(SAVED_REGEX_LOCALSTORAGE_KEY) || "[]"
+        ); // 从 localStorage 读取存档，若无则返回空数组
+        savedRegexSelect.innerHTML =
+          '<option value="">--选择已存档或手动输入--</option>'; // 设置下拉框的默认提示选项
+        savedItems.forEach((item) => {
+          //遍历每个存档项
+          const option = document.createElement("option"); // 创建新的 option 元素
+          option.value = item.pattern || ""; // 设置 option 的 value 为存档的正则表达式，如果正则为空则设为空字符串
+          // 构建 option 显示的文本，包含名称、正则表达式预览和替换内容预览
+          let displayText = item.name; // 存档名称
+          if (item.pattern) {
+            // 如果有正则表达式
+            displayText += ` (正则: ${item.pattern.substring(0, 20)}${
+              item.pattern.length > 20 ? "..." : ""
+            })`; // 附加正则预览
+          }
+          if (
+            typeof item.replacement === "string" &&
+            item.replacement.length > 0
+          ) {
+            // 如果有替换内容且不为空
+            displayText += ` (替换: ${item.replacement.substring(0, 15)}${
+              item.replacement.length > 15 ? "..." : ""
+            })`; // 附加替换内容预览
+          } else if (typeof item.replacement === "string") {
+            // 如果替换内容是空字符串
+            displayText += ` (替换: 空)`; // 标记替换为空
+          }
+          option.textContent = displayText; // 设置 option 的显示文本
+          option.dataset.name = item.name; // 将存档名称存储在 dataset 中
+          option.dataset.replacement =
+            item.replacement !== undefined ? item.replacement : ""; // 将替换内容存储在 dataset 中，若未定义则为空字符串
+
+          savedRegexSelect.appendChild(option); // 将创建的 option 添加到下拉框
+        });
+      }
+
+      /**
+       * @event saveRegexBtn 'click'
+       * @description 处理“存档此表达式”按钮的点击事件。
+       *              收集存档名称、正则表达式和替换内容，并将其保存到 localStorage。
+       *              如果存档名称已存在，则提示用户是否覆盖。
+       */
+      saveRegexBtn.addEventListener("click", () => {
+        const name = regexNameInput.value.trim(); // 获取并去除存档名称两端空格
+        const pattern = regexInput.value.trim(); // 获取并去除正则表达式两端空格
+        const replacement = replaceInput.value; // 获取替换内容（允许两端有空格，因为替换内容可能需要）
+
+        // 校验：名称、正则、替换至少要有一个，且名称不能为空
+        if (!pattern && !replacement && !name) {
+          // 如果三者都为空
+          alert("请输入存档名称、正则表达式或替换内容中的至少一项。");
+          return;
+        }
+        if (!name) {
+          // 如果名称为空
+          alert("存档名称不能为空!");
+          return;
+        }
+        // 如果正则表达式为空但替换内容不为空，则向用户确认
+        if (!pattern && replacement) {
+          if (
+            !confirm(`正则表达式为空，确定只存档名称 "${name}" 和替换内容吗?`)
+          ) {
+            return; // 用户取消则不继续
+          }
+        }
+
+        let savedItems = JSON.parse(
+          localStorage.getItem(SAVED_REGEX_LOCALSTORAGE_KEY) || "[]"
+        ); // 获取已有的存档
+        const existingIndex = savedItems.findIndex(
+          (item) => item.name === name
+        ); // 查找是否存在同名存档
+
+        if (existingIndex > -1) {
+          // 如果存在同名存档
+          if (
+            confirm(
+              `已存在名为 "${name}" 的存档。要覆盖它的正则表达式和替换内容吗?`
+            )
+          ) {
+            // 询问用户是否覆盖
+            savedItems[existingIndex].pattern = pattern; // 覆盖正则表达式
+            savedItems[existingIndex].replacement = replacement; // 覆盖替换内容
+          } else {
+            return; // 用户取消覆盖则不继续
+          }
+        } else {
+          // 如果不存在同名存档
+          savedItems.push({ name, pattern, replacement }); // 添加新的存档项
+        }
+        localStorage.setItem(
+          SAVED_REGEX_LOCALSTORAGE_KEY,
+          JSON.stringify(savedItems)
+        ); // 将更新后的存档数组存回 localStorage
+        loadSavedRegexes(); // 重新加载并显示存档列表
+        alert(`存档 "${name}" 已保存!`);
+
+        // 自动选中刚刚保存或覆盖的存档项
+        for (let i = 0; i < savedRegexSelect.options.length; i++) {
+          if (
+            savedRegexSelect.options[i].dataset.name === name &&
+            savedRegexSelect.options[i].value === pattern && // 比较正则
+            savedRegexSelect.options[i].dataset.replacement === replacement
+          ) {
+            // 比较替换内容
+            savedRegexSelect.selectedIndex = i; // 设置为选中
+            break;
+          }
+        }
+      });
+
+      /**
+       * @event savedRegexSelect 'change'
+       * @description 处理已存档正则表达式下拉列表的选择更改事件。
+       *              当用户选择一个存档项时，将其对应的正则表达式、存档名称和替换内容填充到相应的输入框中。
+       */
+      savedRegexSelect.addEventListener("change", () => {
+        const selectedOption =
+          savedRegexSelect.options[savedRegexSelect.selectedIndex]; // 获取当前选中的 option
+        // 检查 data-name 是否存在，作为有效选项的标志（因为 value 可能为空字符串，例如只存了替换内容）
+        if (selectedOption.dataset.name) {
+          // 如果是有效的存档项（非默认提示选项）
+          regexInput.value = selectedOption.value || ""; // 填充正则表达式输入框，若正则为空则填空字符串
+          regexNameInput.value = selectedOption.dataset.name || ""; // 填充存档名称输入框
+          replaceInput.value =
+            selectedOption.dataset.replacement !== undefined
+              ? selectedOption.dataset.replacement
+              : ""; // 填充替换内容输入框，若未定义则为空字符串
+        } else {
+          // 如果选择的是默认提示选项
+          regexInput.value = ""; // 清空正则表达式输入框
+          regexNameInput.value = ""; // 清空存档名称输入框
+          replaceInput.value = ""; // 清空替换内容输入框
+        }
+        updateButtonStates(); // 重新评估和更新按钮的禁用状态
+      });
+
+      /**
+       * @event deleteRegexBtn 'click'
+       * @description 处理“删除选中”按钮的点击事件。
+       *              删除在下拉列表中选中的存档项（从 localStorage 中移除）。
+       */
+      deleteRegexBtn.addEventListener("click", () => {
+        const selectedOption =
+          savedRegexSelect.options[savedRegexSelect.selectedIndex]; // 获取当前选中的 option
+        if (!selectedOption || !selectedOption.dataset.name) {
+          // 如果没有选中有效存档项
+          alert("请先从下拉列表中选择一个要删除的存档。");
+          return;
+        }
+        const regexNameToDelete = selectedOption.dataset.name; // 获取要删除的存档名称
+        if (
+          confirm(
+            `确定要删除存档 "${regexNameToDelete}" 吗? (包含其正则表达式和替换内容)`
+          )
+        ) {
+          // 确认删除操作
+          let savedItems = JSON.parse(
+            localStorage.getItem(SAVED_REGEX_LOCALSTORAGE_KEY) || "[]"
+          ); // 获取所有存档
+          savedItems = savedItems.filter(
+            (item) => item.name !== regexNameToDelete
+          ); // 过滤掉要删除的存档项
+          localStorage.setItem(
+            SAVED_REGEX_LOCALSTORAGE_KEY,
+            JSON.stringify(savedItems)
+          ); // 保存更新后的存档列表
+          loadSavedRegexes(); // 重新加载存档列表
+          // 如果当前输入框中的名称与已删除的存档名称一致，则清空相关输入框
+          if (regexNameInput.value === regexNameToDelete) {
+            regexInput.value = "";
+            regexNameInput.value = "";
+            replaceInput.value = "";
+          }
+          alert(`存档 "${regexNameToDelete}" 已删除。`);
+        }
+      });
+
+      // --- 本地存储 (页面状态，不包括存档列表) ---
+
+      /**
+       * @function saveState
+       * @description 将当前正则表达式输入框、原文输入框和替换内容输入框的值保存到 localStorage。
+       *              用于在页面刷新后恢复用户输入。
+       */
+      function saveState() {
+        localStorage.setItem("textProcessorRegexInput", regexInput.value); // 保存正则表达式
+        localStorage.setItem("textProcessorInputText", inputText.value); // 保存原文
+        localStorage.setItem("textProcessorReplaceInput", replaceInput.value); // 保存替换内容
+      }
+
+      /**
+       * @function loadState
+       * @description 从 localStorage 加载之前保存的页面状态（正则表达式、原文、替换内容），
+       *              并填充到相应的输入框中。同时初始化 `textForOutputProcessing`。
+       */
+      function loadState() {
+        regexInput.value =
+          localStorage.getItem("textProcessorRegexInput") || ""; // 加载正则表达式，若无则为空
+        inputText.value = localStorage.getItem("textProcessorInputText") || ""; // 加载原文，若无则为空
+        replaceInput.value =
+          localStorage.getItem("textProcessorReplaceInput") || ""; // 加载替换内容，若无则为空
+
+        if (inputText.value) {
+          // 如果原文输入框中有内容
+          textForOutputProcessing = inputText.value; // 初始化 textForOutputProcessing 为原文内容
+          updateOutputDisplay(textForOutputProcessing, false); // 在输出区显示原文，不进行高亮
+        } else {
+          // 如果原文输入框为空
+          textForOutputProcessing = ""; // 初始化 textForOutputProcessing 为空字符串
+          outputTextDisplay.innerHTML = "处理后的文本将显示在这里..."; // 显示占位提示
+        }
+      }
+
+      // --- 主题切换 ---
+
+      /**
+       * @function toggleTheme
+       * @description 切换页面的明暗主题，并将选择的主题保存到 localStorage。
+       */
+      function toggleTheme() {
+        document.body.classList.toggle("dark-theme"); // 切换 body 上的 'dark-theme' 类
+        // 将当前主题状态 ('dark' 或 'light') 保存到 localStorage
+        localStorage.setItem(
+          "textProcessorTheme",
+          document.body.classList.contains("dark-theme") ? "dark" : "light"
+        );
+      }
+
+      /**
+       * @function applyInitialTheme
+       * @description 在页面加载时，从 localStorage 读取之前保存的主题设置并应用。
+       */
+      function applyInitialTheme() {
+        const savedTheme = localStorage.getItem("textProcessorTheme"); // 读取保存的主题
+        if (savedTheme === "dark") {
+          // 如果保存的是暗黑主题
+          document.body.classList.add("dark-theme"); // 应用暗黑主题类
+        }
+      }
+
+      applyInitialTheme(); // 页面加载时应用初始主题
+      themeToggleBtn.addEventListener("click", toggleTheme); // 为主题切换按钮添加点击事件监听
+
+      // --- 事件监听器 (输入框内容变化、按钮点击等) ---
+
+      // 当正则表达式输入框内容改变时，保存页面状态
+      regexInput.addEventListener("input", saveState);
+
+      /**
+       * @event inputText 'input'
+       * @description 处理原文输入框内容改变事件。
+       *              更新 `textForOutputProcessing`，在输出区显示新原文（无高亮），
+       *              清空当前匹配项，更新按钮状态，并保存页面状态。
+       */
+      inputText.addEventListener("input", () => {
+        const newRawText = inputText.value; // 获取新的原文内容
+        textForOutputProcessing = newRawText; // 更新操作的基础文本
+        updateOutputDisplay(newRawText, false); // 在输出区显示新的原文，不进行高亮
+        currentMatches = []; // 原文改变，之前的匹配结果失效，清空
+        updateButtonStates(); // 更新相关按钮（如替换按钮）的可用状态
+        saveState(); // 保存当前页面状态
+      });
+
+      // 当替换内容输入框内容改变时，保存页面状态
+      replaceInput.addEventListener("input", saveState);
+
+      /**
+       * @event outputTextDisplay 'input'
+       * @description 处理处理后文本显示区域 (contenteditable div) 内容改变事件。
+       *              当用户直接编辑此区域时，更新 `textForOutputProcessing`，
+       *              清空当前基于正则的匹配项（因为文本已手动更改），并更新按钮状态。
+       */
+      outputTextDisplay.addEventListener("input", () => {
+        textForOutputProcessing = outputTextDisplay.innerText; // 更新操作的基础文本为用户编辑后的内容
+        currentMatches = []; // 直接编辑会使之前基于正则的匹配失效，清空
+        updateButtonStates(); // 更新按钮状态
+        copyModifiedBtn.disabled = outputTextDisplay.innerText.trim() === ""; // 如果编辑后为空，禁用复制按钮
+      });
+
+      /**
+       * @event pasteBtn 'click'
+       * @description 处理“粘贴剪贴板内容到原文”按钮的点击事件。
+       *              尝试从剪贴板读取文本，并将其设置到原文输入框和 `textForOutputProcessing`，
+       *              然后更新输出显示区、清空匹配、更新按钮状态并保存页面状态。
+       */
+      pasteBtn.addEventListener("click", async () => {
+        try {
+          const text = await navigator.clipboard.readText(); // 异步读取剪贴板文本
+          inputText.value = text; // 设置到原文输入框
+          textForOutputProcessing = text; // 更新操作的基础文本
+          updateOutputDisplay(text, false); // 在输出区显示粘贴的文本，不进行高亮
+          currentMatches = []; // 清空之前的匹配结果
+          updateButtonStates(); // 更新按钮状态
+          saveState(); // 保存页面状态
+          alert(
+            "文本已粘贴到原文输入框，并已同步显示在下方处理区。请使用“查找”按钮进行匹配和高亮操作。"
+          );
+        } catch (err) {
+          console.error("无法粘贴文本: ", err);
+          alert(
+            "无法从剪贴板粘贴文本。请确保已授予剪贴板权限，或您的浏览器支持此功能。"
+          );
+        }
+      });
+
+      /**
+       * @event findBtn 'click'
+       * @description 处理“查找”按钮的点击事件。
+       *              根据正则表达式输入框中的模式，在 `textForOutputProcessing` (当前工作文本) 中查找所有匹配项。
+       *              如果正则为空，则仅更新显示为当前文本（无高亮）。
+       *              查找到的匹配项存储在 `currentMatches` 中，并在输出区高亮显示。
+       *              最后更新按钮状态。
+       */
+      findBtn.addEventListener("click", () => {
+        const pattern = regexInput.value; // 获取正则表达式
+
+        // 如果正则表达式为空，则不进行查找，仅更新显示为当前文本（无高亮）
+        if (!pattern.trim()) {
+          updateOutputDisplay(textForOutputProcessing, false); // 显示当前文本，无高亮
+          currentMatches = []; // 清空匹配项
+          updateButtonStates(); // 更新按钮状态
+          return;
+        }
+
+        try {
+          const regex = new RegExp(pattern, "g"); // 创建全局匹配的正则表达式对象
+          currentMatches = []; // 清空之前的匹配结果
+          let match;
+          // 在 textForOutputProcessing (当前工作文本) 中循环查找所有匹配项
+          while ((match = regex.exec(textForOutputProcessing)) !== null) {
+            currentMatches.push({
+              // 存储每个匹配项的信息
+              index: match.index, // 匹配项的起始索引
+              text: match[0], // 匹配到的文本
+              length: match[0].length, // 匹配文本的长度
+            });
+          }
+          highlightMatchesInOutput(textForOutputProcessing, currentMatches); // 高亮显示所有找到的匹配项
+          updateButtonStates(); // 更新按钮状态（如启用替换按钮）
+        } catch (e) {
+          // 捕获无效的正则表达式错误
+          alert("无效的正则表达式: " + e.message);
+          updateOutputDisplay(textForOutputProcessing, false); // 出错时显示当前文本，无高亮
+          currentMatches = []; // 清空匹配项
+          updateButtonStates(); // 更新按钮状态
+        }
+      });
+
+      /**
+       * @function highlightMatchesInOutput
+       * @description 根据提供的文本和匹配项数组，在 outputTextDisplay 中高亮显示匹配部分。
+       * @param {string} textToHighlight - 需要进行高亮处理的原始文本。
+       * @param {Array<Object>} matches - 匹配项数组，每个对象包含 {index, text, length}。
+       */
+      function highlightMatchesInOutput(textToHighlight, matches) {
+        if (!matches || matches.length === 0) {
+          // 如果没有匹配项
+          updateOutputDisplay(textToHighlight, false); // 直接显示纯文本，不进行高亮处理
+          return;
+        }
+        let highlightedHtml = ""; // 用于构建包含高亮标签的 HTML 字符串
+        let lastIndex = 0; // 记录上一个匹配项结束后的索引位置
+        // 确保匹配项按索引排序，以便正确构建高亮文本
+        const sortedMatches = [...matches].sort((a, b) => a.index - b.index); // 对匹配项按起始位置排序
+
+        sortedMatches.forEach((match) => {
+          // 遍历排序后的每个匹配项
+          // 添加从上一个匹配结束到当前匹配开始之间的普通文本（需要HTML转义）
+          highlightedHtml += escapeHtml(
+            textToHighlight.substring(lastIndex, match.index)
+          );
+          // 添加当前匹配项，并用 <span class="highlight"> 包裹（匹配文本也需HTML转义）
+          highlightedHtml += `<span class="highlight">${escapeHtml(
+            match.text
+          )}</span>`;
+          lastIndex = match.index + match.length; // 更新 lastIndex 为当前匹配项的结束位置
+        });
+        // 添加最后一个匹配项之后剩余的普通文本（需要HTML转义）
+        highlightedHtml += escapeHtml(textToHighlight.substring(lastIndex));
+        outputTextDisplay.innerHTML = highlightedHtml; // 将构建好的 HTML 设置到输出区域
+        copyModifiedBtn.disabled = outputTextDisplay.innerText.trim() === ""; // 更新复制按钮状态
+      }
+
+      /**
+       * @function escapeHtml
+       * @description 对字符串进行 HTML 转义，防止 XSS 攻击和确保特殊字符正确显示。
+       * @param {string} unsafe - 可能包含 HTML 特殊字符的不安全字符串。
+       * @returns {string} 转义后的安全字符串。
+       */
+      function escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return ""; // 处理 null 或 undefined 输入
+        return unsafe
+          .replace(/&/g, "&amp;") // 替换 &
+          .replace(/</g, "&lt;") // 替换 <
+          .replace(/>/g, "&gt;") // 替换 >
+          .replace(/"/g, "&quot;") // 替换 "
+          .replace(/'/g, "&#039;"); // 替换 '
+      }
+
+      /**
+       * @function updateOutputDisplay
+       * @description 更新 outputTextDisplay 元素的内容。
+       *              如果需要高亮且存在匹配项和有效正则，则调用 highlightMatchesInOutput。
+       *              否则，直接显示转义后的纯文本。
+       * @param {string} text - 要显示的文本。
+       * @param {boolean} [performsHighlighting=true] - 是否尝试进行高亮。
+       */
+      function updateOutputDisplay(text, performsHighlighting = true) {
+        // 只有当明确需要高亮、当前存在匹配项、并且正则表达式输入框不为空时，才进行高亮处理
+        if (
+          performsHighlighting &&
+          currentMatches.length > 0 &&
+          regexInput.value.trim()
+        ) {
+          highlightMatchesInOutput(text, currentMatches); // 调用高亮函数
+        } else {
+          outputTextDisplay.innerHTML = escapeHtml(text); // 否则，显示经过 HTML 转义的纯文本
+        }
+        // 更新复制按钮的禁用状态：如果输出区内容为空或为初始占位符，则禁用
+        copyModifiedBtn.disabled =
+          outputTextDisplay.innerText.trim() === "" ||
+          outputTextDisplay.innerHTML === "处理后的文本将显示在这里...";
+      }
+
+      /**
+       * @event replaceNextBtn 'click'
+       * @description 处理“替换下一个”按钮的点击事件。
+       *              使用当前正则表达式和替换文本，在 `textForOutputProcessing` 中替换第一个匹配项。
+       *              替换后，更新 `textForOutputProcessing`，重新查找所有匹配项并高亮，然后更新按钮状态。
+       */
+      replaceNextBtn.addEventListener("click", () => {
+        const patternString = regexInput.value; // 获取正则表达式字符串
+        const replacementText = replaceInput.value; // 获取替换文本
+
+        // 如果正则表达式为空或当前没有匹配项，则提示用户并返回
+        if (!patternString.trim() || currentMatches.length === 0) {
+          alert("没有找到可替换的匹配项。请先执行“查找”。");
+          return;
+        }
+        try {
+          const regex = new RegExp(patternString); // 创建一个非全局的正则表达式，用于替换第一个匹配
+          if (regex.test(textForOutputProcessing)) {
+            // 检查当前工作文本中是否存在至少一个匹配项
+            // 执行替换操作，只替换第一个匹配项
+            const newText = textForOutputProcessing.replace(
+              regex,
+              replacementText
+            );
+            textForOutputProcessing = newText; // 关键：更新工作文本为替换后的文本
+
+            // 替换后，需要基于更新后的 textForOutputProcessing 重新查找所有匹配项
+            const globalRegex = new RegExp(patternString, "g"); // 使用全局正则重新查找
+            currentMatches = []; // 清空旧的匹配项列表
+            let match;
+            while (
+              (match = globalRegex.exec(textForOutputProcessing)) !== null
+            ) {
+              // 查找所有新匹配项
+              currentMatches.push({
+                index: match.index,
+                text: match[0],
+                length: match[0].length,
+              });
+            }
+            // 高亮显示更新后的工作文本及其新的匹配项
+            highlightMatchesInOutput(textForOutputProcessing, currentMatches);
+            updateButtonStates(); // 更新按钮状态
+          } else {
+            // 此情况理论上不应发生，因为按钮启用条件是 currentMatches.length > 0
+            // 但作为防御性编程，如果 textForOutputProcessing 被意外修改导致无匹配，则提示
+            alert("在当前处理文本中没有更多可替换的匹配项。");
+            currentMatches = []; // 清理匹配项
+            highlightMatchesInOutput(textForOutputProcessing, currentMatches); // 移除高亮
+            updateButtonStates(); // 更新按钮状态
+          }
+        } catch (e) {
+          // 捕获替换过程中可能发生的错误（如无效正则）
+          alert("替换时发生错误: " + e.message);
+        }
+      });
+
+      /**
+       * @event replaceAllBtn 'click'
+       * @description 处理“全部替换”按钮的点击事件。
+       *              使用当前正则表达式（全局模式）和替换文本，在 `textForOutputProcessing` 中替换所有匹配项。
+       *              替换后，更新 `textForOutputProcessing`，更新输出区显示（无高亮），清空匹配项，并更新按钮状态。
+       */
+      replaceAllBtn.addEventListener("click", () => {
+        const patternString = regexInput.value; // 获取正则表达式字符串
+        const replacementText = replaceInput.value; // 获取替换文本
+
+        // 如果正则表达式为空或当前没有匹配项，则提示用户并返回
+        if (!patternString.trim() || currentMatches.length === 0) {
+          alert("没有找到可替换的匹配项。请先执行“查找”。");
+          return;
+        }
+        try {
+          const regex = new RegExp(patternString, "g"); // 创建全局匹配的正则表达式
+          if (regex.test(textForOutputProcessing)) {
+            // 检查当前工作文本中是否有任何匹配项
+            // 执行全局替换操作
+            const newText = textForOutputProcessing.replace(
+              regex,
+              replacementText
+            );
+            textForOutputProcessing = newText; // 关键：更新工作文本为全部替换后的文本
+            updateOutputDisplay(textForOutputProcessing, false); // 显示替换后的新文本，不进行高亮
+            currentMatches = []; // 全部替换后，之前的匹配项列表清空，因为文本结构已大规模改变
+            updateButtonStates(); // 更新按钮状态（通常会禁用替换按钮，因为匹配项已清空）
+          } else {
+            // 此情况理论上不应发生，因为按钮启用条件是 currentMatches.length > 0
+            alert("在当前处理文本中没有匹配项可替换。");
+            currentMatches = []; // 确保匹配项清空
+            updateOutputDisplay(textForOutputProcessing, false); // 确保显示当前文本无高亮
+            updateButtonStates(); // 更新按钮状态
+          }
+        } catch (e) {
+          // 捕获替换过程中可能发生的错误
+          alert("全部替换时发生错误: " + e.message);
+        }
+      });
+
+      /**
+       * @event copyModifiedBtn 'click'
+       * @description 处理“复制处理后文本”按钮的点击事件。
+       *              尝试将 outputTextDisplay 中显示的纯文本内容复制到用户剪贴板。
+       */
+      copyModifiedBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(outputTextDisplay.innerText); // 复制 outputTextDisplay 的纯文本内容
+          alert("处理后的文本已复制到剪贴板!");
+        } catch (err) {
+          console.error("无法复制文本: ", err);
+          alert("无法复制文本。");
+        }
+      });
+
+      /**
+       * @function updateButtonStates
+       * @description 根据当前状态（如是否有正则表达式、是否有匹配项、输出区是否为空等）
+       *              更新各个按钮（替换、全部替换、复制、删除存档）的禁用 (disabled) 状态。
+       */
+      function updateButtonStates() {
+        const hasPattern = regexInput.value.trim() !== ""; // 检查正则表达式输入框是否为空
+        const hasMatches = currentMatches.length > 0; // 检查当前是否有查找到的匹配项
+
+        // 替换下一个和全部替换按钮：需要有正则表达式且有匹配项时才启用
+        replaceNextBtn.disabled = !hasMatches || !hasPattern;
+        replaceAllBtn.disabled = !hasMatches || !hasPattern;
+
+        // 复制处理后文本按钮：当输出区内容不为空且不是初始占位符时启用
+        copyModifiedBtn.disabled =
+          outputTextDisplay.innerText.trim() === "" ||
+          outputTextDisplay.innerHTML === "处理后的文本将显示在这里...";
+
+        // 标签旁的复制按钮状态与底部复制按钮保持一致
+        copyOutputBtn.disabled = copyModifiedBtn.disabled;
+
+        const selectedSavedOption =
+          savedRegexSelect.options[savedRegexSelect.selectedIndex]; // 获取当前选中的存档项
+        // 删除存档按钮：仅当选中了有效的存档项（通过 data-name 判断，排除默认提示选项）时才启用
+        deleteRegexBtn.disabled =
+          !selectedSavedOption || !selectedSavedOption.dataset.name;
+      }
+
+      // --- 回到顶部按钮功能 ---
+      const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+
+      // 监听滚动事件，控制按钮显示隐藏
+      window.addEventListener("scroll", () => {
+        // 当页面滚动超过300px时显示按钮
+        if (window.scrollY > 300) {
+          scrollToTopBtn.style.display = "block";
+        } else {
+          scrollToTopBtn.style.display = "none";
+        }
+      });
+
+      // 为标签旁的复制按钮添加事件监听器
+      copyOutputBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(outputTextDisplay.innerText);
+          alert("处理后的文本已复制到剪贴板!");
+        } catch (err) {
+          console.error("无法复制文本: ", err);
+          alert("无法复制文本。");
+        }
+      });
+
+      // 点击按钮滚动到处理后文本框顶部
+      scrollToTopBtn.addEventListener("click", () => {
+        outputTextDisplay.scrollIntoView({ behavior: "smooth" });
+      });
+
+      // --- 初始化 ---
+      // 页面加载时执行的初始化操作。
+      loadState(); // 加载之前保存的页面状态（输入框内容），会初始化 textForOutputProcessing。
+      loadSavedRegexes(); // 加载并显示已存档的正则表达式和替换内容列表。
+      updateButtonStates(); // 根据加载后的状态，初始化所有按钮的可用性。
+
+      // 关于 textForOutputProcessing 的初始化说明:
+      // 1. `loadState()` 函数负责从 localStorage 读取 `inputText` 的值。
+      // 2. 如果 `inputText` 有值，`textForOutputProcessing` 会被设置为 `inputText.value`，
+      //    并且 `outputTextDisplay` 会显示这个文本（无高亮）。
+      // 3. 如果 `inputText` 为空，`textForOutputProcessing` 会被设置为空字符串，
+      //    `outputTextDisplay` 会显示占位符。
+      // 4. 用户对 `inputText` 的输入、粘贴操作，或对 `outputTextDisplay` 的直接编辑，
+      //    以及替换操作，都会相应地更新 `textForOutputProcessing`。
+      // 5. `findBtn` 的点击事件会使用当前的 `textForOutputProcessing` 进行查找。
+    </script>
+  </body>
+</html>
